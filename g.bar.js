@@ -1,5 +1,5 @@
 /*!
- * g.Raphael 0.51 - Charting library, based on Raphaël
+ * g.Raphael 0.52 - Charting library, based on Raphaël
  *
  * Copyright (c) 2009-2012 Dmitry Baranovskiy (http://g.raphaeljs.com)
  * Licensed under the MIT (http://www.opensource.org/licenses/mit-license.php) license.
@@ -136,7 +136,7 @@
     }
 
 /*\
- * Paper.vbarchart
+ * Paper.barchart
  [ method ]
  **
  * Creates a vertical bar chart
@@ -157,6 +157,10 @@
  o stacked (boolean) whether or not to tread values as in a stacked bar chart
  o to
  o stretch (boolean)
+ o axis (string) Which axes should be renedered. String of four values evaluated in order `'top right bottom left'` e.g. `'0 0 1 1'`.
+ o axisystep (number) distance between values on axis Y
+ o axisxlabels (array) labels to be rendered instead of numeric values on axis X
+ o axisylabels (array) labels to be rendered instead of numeric values on axis Y
  o }
  **
  = (object) path element of the popup
@@ -221,7 +225,8 @@
             barvgutter = opts.vgutter == null ? 20 : opts.vgutter,
             stack = [],
             X = x + barhgutter,
-            Y = (height - 2 * barvgutter) / total;
+            Y = (height - 2 * barvgutter) / total,
+            maxVal = 0;
 
         if (!opts.stretch) {
             barhgutter = Math.round(barhgutter);
@@ -249,6 +254,7 @@
                 bar.w = barwidth;
                 bar.h = h;
                 bar.value = multi ? values[j][i] : values[i];
+                (bar.value > maxVal) && (maxVal = bar.value);
 
                 if (!opts.stacked) {
                     X += barwidth;
@@ -283,6 +289,7 @@
                     cover.bar = bar;
                     cover.value = bar.value;
                     size += bar.value;
+                    (size > maxVal) && (maxVal = size);
                 }
 
                 X += barwidth;
@@ -309,6 +316,25 @@
             }
         }
 
+        /*\
+        * barchart.axis
+        [ object ]
+        **
+        * Set containing Elements of the chart axis. The set is populated if `'axis'` definition string was passed to @Paper.barchart 
+        **
+        ** 
+        \*/
+        var axis = paper.set();
+
+        if (opts.axis) {
+            var ax = (opts.axis + "").split(/[,\s]+/);
+            (opts.axisxlabels) && opts.axisxlabels.unshift(" ") && opts.axisxlabels.push(" ");
+            +ax[0] && axis.push(chartinst.axis(x - barwidth / 2, y + gutter, width + barwidth, 0, (multi) ? bars[0].length+1 : bars.length+1, (multi) ? bars[0].length+1 : bars.length+1, 2, opts.axisxlabels, paper));
+            +ax[1] && axis.push(chartinst.axis(x + width, y + height - gutter, height - 2 * gutter, 0, maxVal, opts.axisystep || Math.floor((height - 2 * gutter) / 20), 3, opts.axisylabels, paper));
+            +ax[2] && axis.push(chartinst.axis(x - barwidth / 2, y + height - gutter, width + barwidth, 0, (multi) ? bars[0].length+1 : bars.length+1, (multi) ? bars[0].length+1 : bars.length+1, 0, opts.axisxlabels, paper));
+            +ax[3] && axis.push(chartinst.axis(x, y + height - gutter, height - 2 * gutter, 0, maxVal, opts.axisystep || Math.floor((height - 2 * gutter) / 20), 1, opts.axisylabels, paper));
+        }
+
         chart.label = function (labels, isBottom) {
             labels = labels || [];
             this.labels = paper.set();
@@ -323,9 +349,9 @@
                         tot += multi ? values[j][i] : values[i];
 
                         if (j == multi - 1) {
-                            var label = paper.labelise(labels[i], tot, total);
+                            var label = chartinst.labelise(labels[i], tot, total);
 
-                            L = paper.text(bars[i * (multi || 1) + j].x, y + height - barvgutter / 2, label).attr(txtattr).insertBefore(covers[i * (multi || 1) + j]);
+                            L = paper.text(multi ? bars[j][i].x : bars[i].x, y + height - barvgutter / 2, label).attr(txtattr).insertBefore(covers[i * (multi || 1) + j]);
 
                             var bb = L.getBBox();
 
@@ -341,9 +367,9 @@
             } else {
                 for (var i = 0; i < len; i++) {
                     for (var j = 0; j < (multi || 1); j++) {
-                        var label = paper.labelise(multi ? labels[j] && labels[j][i] : labels[i], multi ? values[j][i] : values[i], total);
+                        var label = chartinst.labelise(multi ? labels[j] && labels[j][i] : labels[i], multi ? values[j][i] : values[i], total);
 
-                        L = paper.text(bars[i * (multi || 1) + j].x, isBottom ? y + height - barvgutter / 2 : bars[i * (multi || 1) + j].y - 10, label).attr(txtattr).insertBefore(covers[i * (multi || 1) + j]);
+                        L = paper.text(multi ? bars[j][i].x : bars[i].x, isBottom ? y + height - barvgutter / 2 : (multi ? bars[j][i].y - 10 : bars[i].y - 10), label).attr(txtattr).insertBefore(covers[i * (multi || 1) + j]);
 
                         var bb = L.getBBox();
 
@@ -424,7 +450,7 @@
     };
     
 /*\
- * Paper.barchart
+ * Paper.hbarchart
  [ method ]
  **
  * Creates a horizontal bar chart
@@ -445,6 +471,10 @@
  o stacked (boolean) whether or not to tread values as in a stacked bar chart
  o to
  o stretch (boolean)
+ o axis (string) Which axes should be renedered. String of four values evaluated in order `'top right bottom left'` e.g. `'0 0 1 1'`.
+ o axisxstep (number) distance between values on axis Y
+ o axisxlabels (array) labels to be rendered instead of numeric values on axis X
+ o axisylabels (array) labels to be rendered instead of numeric values on axis Y
  o }
  **
  = (object) path element of the popup
@@ -506,7 +536,8 @@
             bargutter = Math.floor(barheight * gutter / 100),
             stack = [],
             Y = y + bargutter,
-            X = (width - 1) / total;
+            X = (width - 1) / total,
+            maxVal = 0;
 
         !opts.stacked && (barheight /= multi || 1);
 
@@ -528,6 +559,7 @@
                 bar.w = Math.round(val * X);
                 bar.h = barheight;
                 bar.value = +val;
+                (bar.value > maxVal) && (maxVal = bar.value);
 
                 if (!opts.stacked) {
                     Y += barheight;
@@ -561,6 +593,7 @@
                     covers.push(cover = paper.rect(x + size * X, bar.y - bar.h / 2, bar.value * X, barheight).attr(chartinst.shim));
                     cover.bar = bar;
                     size += bar.value;
+                    (size > maxVal) && (maxVal = size);
                 }
 
                 Y += barheight;
@@ -587,18 +620,37 @@
             }
         }
 
+        /*\
+        * hbarchart.axis
+        [ object ]
+        **
+        * Set containing Elements of the chart axis. The set is populated if `'axis'` definition string was passed to @Paper.hbarchart 
+        **
+        ** 
+        \*/
+        var axis = paper.set();
+
+        if (opts.axis) {
+            var ax = (opts.axis + "").split(/[,\s]+/);
+            (opts.axisylabels) && opts.axisylabels.reverse() && opts.axisylabels.unshift(" ") && opts.axisylabels.push(" ");
+            +ax[0] && axis.push(chartinst.axis(x, y, width, 0, maxVal, opts.axisxstep || Math.floor((height - 2 * gutter) / 20), 2, opts.axisxlabels, paper));
+            +ax[1] && axis.push(chartinst.axis(x + width, y + height + barheight / 2, height + barheight, 0, (multi) ? bars[0].length+1 : bars.length+1, (multi) ? bars[0].length+1 : bars.length+1, 3, opts.axisylabels, paper));
+            +ax[2] && axis.push(chartinst.axis(x, y + height, width, 0, maxVal, opts.axisxstep || Math.floor((height - 2 * gutter) / 20), 0, opts.axisxlabels, paper));
+            +ax[3] && axis.push(chartinst.axis(x, y + height + barheight / 2, height + barheight, 0, (multi) ? bars[0].length+1 : bars.length+1, (multi) ? bars[0].length+1 : bars.length+1, 1, opts.axisylabels, paper));
+        }
+
         chart.label = function (labels, isRight) {
             labels = labels || [];
             this.labels = paper.set();
 
             for (var i = 0; i < len; i++) {
                 for (var j = 0; j < multi; j++) {
-                    var  label = paper.labelise(multi ? labels[j] && labels[j][i] : labels[i], multi ? values[j][i] : values[i], total),
+                    var  label = chartinst.labelise(multi ? labels[j] && labels[j][i] : labels[i], multi ? values[j][i] : values[i], total),
                         X = isRight ? bars[i * (multi || 1) + j].x - barheight / 2 + 3 : x + 5,
                         A = isRight ? "end" : "start",
                         L;
 
-                    this.labels.push(L = paper.text(X, bars[i * (multi || 1) + j].y, label).attr(txtattr).attr({ "text-anchor": A }).insertBefore(covers[0]));
+                    this.labels.push(L = paper.text(X, multi ? bars[j][i].y : bars[i].y, label).attr(txtattr).attr({ "text-anchor": A }).insertBefore(covers[0]));
 
                     if (L.getBBox().x < x + 5) {
                         L.attr({x: x + 5, "text-anchor": "start"});

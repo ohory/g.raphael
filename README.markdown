@@ -6,13 +6,20 @@ For more information, see: http://g.raphaeljs.com/
 Changelog
 ---------
 
+**v0.52**
+
+ * Fixed issue with label() on barchart
+ * added axis management on barchart
+ * added custom axis labels option on linechart
+ * updated docs
+
 **v0.51**
 
  * Fixed issues with piechart related to hrefs
  * Exposed minPercent and maxSlices in piechart
  * merged several pull requests fixing other issues
  * created docs using dr.js (see docs/reference.html)
-   
+
 **v0.5**
 
  * Refactored codebase and API to work with Raphaël 2.0
